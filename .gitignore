@@ -1,0 +1,5 @@
+.vscode
+.venv
+aliyun_cert.egg-info
+build
+__pycache__

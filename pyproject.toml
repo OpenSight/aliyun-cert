@@ -1,0 +1,62 @@
+[project]
+name = "aliyun-cert"
+description = ""
+version = "0.1.0"
+authors = [{ name = "OpenSight", email = "public@opensight.cn" }]
+readme = "README.md"
+license = { text = "AGPLv3" }
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Pyramid",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: System :: Systems Administration",
+]
+requires-python = ">=3.9"
+dynamic = ["dependencies"]
+
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=53.0.0", "wheel"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
+
+[tool.setuptools.packages]
+find = {} # Scanning implicit namespaces is active by default
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[project.scripts]
+aliyun-cert = "aliyun_cert.main:cli"
+
+[project.entry-points."certbot.plugins"]
+dns-aliyun = "certbot_dns_aliyun.dns_aliyun:Authenticator"
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.eggs         # exclude a few common directories in the
+  | \.git          # root of the project
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | \.vscode
+  | \.pytest_cache
+  | _build
+  | buck-out
+  | build
+  | dist
+  | LVR.egg-info
+)/
+'''
