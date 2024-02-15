@@ -2,4 +2,5 @@
 .venv
 aliyun_cert.egg-info
 build
+dist
 __pycache__

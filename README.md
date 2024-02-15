@@ -1,6 +1,6 @@
 ### 功能
 
-通过本脚本可以为阿里云的 `CDN` 以及 `直播服务` 域名申请配置以及自动续期免费的 let's encrypt 证书。
+通过本脚本可以为阿里云的 `CDN` 以及 `直播服务` 域名申请配置以及自动续期免费的 let's encrypt 证书。 [DOC EN](https://github.com/OpenSight/aliyun-cert/blob/main/README.en.md)
 
 ### 安装和配置
 
