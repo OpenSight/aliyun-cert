@@ -1,7 +1,6 @@
 import os, sys
 from pathlib import Path
 from typing import List, TextIO
-from click.shell_completion import CompletionItem
 import rich_click as click
 from rich.console import Console
 from rich.panel import Panel
@@ -9,11 +8,6 @@ from rich.table import Table
 from rich.console import Group
 from datetime import datetime, timezone
 import logging
-from alibabacloud_cdn20180510.client import Client as Cdn20180510Client
-from alibabacloud_live20161101.client import Client as live20161101Client
-from alibabacloud_tea_openapi import models as open_api_models
-from alibabacloud_cdn20180510 import models as cdn_20180510_models
-from alibabacloud_live20161101 import models as live_20161101_models
 import dateutil.parser
 from configobj import ConfigObj
 
@@ -42,12 +36,16 @@ class RenewedDomains(click.ParamType):
 
 @click.group()
 @click.option("--access-key-id", envvar="ALIYUN_ACCESS_KEY_ID", help="Aliyun access key id")
-@click.option("--access-key-secret", envvar="ALIYUN_ACCESS_KEY_SECRET", help="Aliyun access key secret")
 @click.option(
-    "--access-key-ini-file", 
-    envvar="ALIYUN_ACCESS_KEY_INI_FILE", 
-    default=str(Path.home()/".secrets/aliyun.ini"), 
-    help="Aliyun access key ini file"
+    "--access-key-secret",
+    envvar="ALIYUN_ACCESS_KEY_SECRET",
+    help="Aliyun access key secret",
+)
+@click.option(
+    "--access-key-ini-file",
+    envvar="ALIYUN_ACCESS_KEY_INI_FILE",
+    default=str(Path.home() / ".secrets/aliyun.ini"),
+    help="Aliyun access key ini file",
 )
 @click.pass_context
 def cli(ctx, access_key_id: str, access_key_secret: str, access_key_ini_file: str) -> None:
@@ -90,11 +88,18 @@ def list_domains(aliyun: Aliyun, cdn: bool, live: bool) -> None:
                 g.add_row("life", c.cert_life)
                 if c.cert_expire_time:
                     days_left = calc_left_days(c.cert_expire_time)
-                    g.add_row("expired", "[bold red]TRUE[/]" if days_left < 0 else c.cert_expire_time + f" ({days_left} days left)")
-                subpanels.append(
-                    Panel(g, title=f"[bold blue]{c.cert_name}[/]", title_align="left")
-                )        
-            cprint(Panel(Group(*subpanels), title=f"[bold green]{d.domain_name}[/]", title_align="left"))
+                    g.add_row(
+                        "expired",
+                        ("[bold red]TRUE[/]" if days_left < 0 else c.cert_expire_time + f" ({days_left} days left)"),
+                    )
+                subpanels.append(Panel(g, title=f"[bold blue]{c.cert_name}[/]", title_align="left"))
+            cprint(
+                Panel(
+                    Group(*subpanels),
+                    title=f"[bold green]{d.domain_name}[/]",
+                    title_align="left",
+                )
+            )
     if live:
         for d, certs in aliyun.iter_live_domains():
             subpanels = []
@@ -108,12 +113,19 @@ def list_domains(aliyun: Aliyun, cdn: bool, live: bool) -> None:
                 g.add_row("life", c.cert_life)
                 if c.cert_expire_time:
                     days_left = calc_left_days(c.cert_expire_time)
-                    g.add_row("expired", "[bold red]TRUE[/]" if days_left < 0 else c.cert_expire_time + f" ({days_left} days left)")
-                subpanels.append(
-                    Panel(g, title=f"[bold blue]{c.cert_name}[/]", title_align="left")
-                )        
-            cprint(Panel(Group(*subpanels), title=f"[bold green]{d.domain_name}[/]", title_align="left"))
-        
+                    g.add_row(
+                        "expired",
+                        ("[bold red]TRUE[/]" if days_left < 0 else c.cert_expire_time + f" ({days_left} days left)"),
+                    )
+                subpanels.append(Panel(g, title=f"[bold blue]{c.cert_name}[/]", title_align="left"))
+            cprint(
+                Panel(
+                    Group(*subpanels),
+                    title=f"[bold green]{d.domain_name}[/]",
+                    title_align="left",
+                )
+            )
+
 
 @cli.command()
 @pass_aliyun
@@ -134,7 +146,10 @@ def list_certs(aliyun: Aliyun) -> None:
         g.add_row("status", c.status)
         g.add_row("issuer", c.issuer)
         g.add_row("start", c.start_date)
-        g.add_row("expired", "[bold red]TRUE[/]" if c.expired else str(c.end_date) + f" ({days_left} days left)")
+        g.add_row(
+            "expired",
+            ("[bold red]TRUE[/]" if c.expired else str(c.end_date) + f" ({days_left} days left)"),
+        )
         cprint(Panel(g, title=f"[bold green]{c.certificate_id}[/]", title_align="left"))
 
 
@@ -157,7 +172,10 @@ def get_cert(aliyun: Aliyun, cert_id: int) -> None:
     g.add_row("SANs", c.sans)
     g.add_row("issuer", c.issuer)
     g.add_row("start", c.start_date)
-    g.add_row("expired", "[bold red]TRUE[/]" if c.expired else str(c.end_date) + f" ({days_left} days left)")
+    g.add_row(
+        "expired",
+        ("[bold red]TRUE[/]" if c.expired else str(c.end_date) + f" ({days_left} days left)"),
+    )
     cprint(Panel(g, title=f"[bold green]{c.id}[/]", title_align="left"))
 
 
@@ -188,7 +206,11 @@ def delete_cert(aliyun: Aliyun, cert_id: int) -> None:
 @cli.command()
 @click.option("--cert-id", required=True, type=int, help="certificate id")
 @click.option("--domain", required=True, type=str, help="domain name")
-@click.option('--service', type=click.Choice(['cdn', 'live'], case_sensitive=False), help="aliyun service type")
+@click.option(
+    "--service",
+    type=click.Choice(["cdn", "live"], case_sensitive=False),
+    help="aliyun service type",
+)
 @pass_aliyun
 def set_cert(aliyun: Aliyun, cert_id: int, domain: str, service: str) -> None:
     """
@@ -230,13 +252,31 @@ def replace_cert(aliyun: Aliyun, cert_id: int, cdn: bool, live: bool) -> None:
 
 
 @cli.command()
-@click.option("--cert-path", envvar="RENEWED_LINEAGE", required=True, help="path to directory containing fullchain.pem and privkey.pem")
-@click.option("--renewed_domains", envvar="RENEWED_DOMAINS", type=RenewedDomains(), required=True, help="renewed domain names split by space")
+@click.option(
+    "--cert-path",
+    envvar="RENEWED_LINEAGE",
+    required=True,
+    help="path to directory containing fullchain.pem and privkey.pem",
+)
+@click.option(
+    "--renewed_domains",
+    envvar="RENEWED_DOMAINS",
+    type=RenewedDomains(),
+    required=True,
+    help="renewed domain names split by space",
+)
 @click.option("--cdn", is_flag=True, help="replace certificates of CDN domains")
 @click.option("--live", is_flag=True, help="replace certificates of live domains")
 @click.option("--delete-old-cert", is_flag=True, help="delete old certificate after deployment")
 @pass_aliyun
-def certbot_deploy_hook(aliyun: Aliyun, cert_path, renewed_domains: List[str], cdn: bool, live: bool, delete_old_cert: bool) -> None:
+def certbot_deploy_hook(
+    aliyun: Aliyun,
+    cert_path,
+    renewed_domains: List[str],
+    cdn: bool,
+    live: bool,
+    delete_old_cert: bool,
+) -> None:
     """
     deploy hook for certbot
 
@@ -277,7 +317,7 @@ def calc_left_days(dts: str) -> int:
         return -1
     dt = dateutil.parser.isoparse(dts)
     return (dt - datetime.now(tz=timezone.utc)).days
-        
+
 
 if __name__ == "__main__":
     cli()

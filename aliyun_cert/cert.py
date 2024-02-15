@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import List, Tuple, Set
 from collections.abc import Generator
-from datetime import datetime 
+from datetime import datetime
 from alibabacloud_cdn20180510.client import Client as Cdn20180510Client
 from alibabacloud_live20161101.client import Client as live20161101Client
 from alibabacloud_cas20200407.client import Client as cas20200407Client
@@ -15,51 +15,55 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
 class Aliyun:
     def __init__(self, access_key_id, access_key_secret) -> None:
         self._cdn_client = Cdn20180510Client(
             open_api_models.Config(
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,
-                # Endpoint 请参考 https://api.aliyun.com/product/Cdn
-                endpoint="cdn.aliyuncs.com"
+                # Endpoint https://api.aliyun.com/product/Cdn
+                endpoint="cdn.aliyuncs.com",
             )
         )
         self._live_client = live20161101Client(
             open_api_models.Config(
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,
-                # Endpoint 请参考 https://api.aliyun.com/product/live
-                endpoint = "live.aliyuncs.com"
+                # Endpoint https://api.aliyun.com/product/live
+                endpoint="live.aliyuncs.com",
             )
         )
         self._cas_client = cas20200407Client(
             open_api_models.Config(
                 access_key_id=access_key_id,
                 access_key_secret=access_key_secret,
-                # Endpoint 请参考 https://api.aliyun.com/product/cas
-                endpoint = "cas.aliyuncs.com"
+                # Endpoint https://api.aliyun.com/product/cas
+                endpoint="cas.aliyuncs.com",
             )
         )
-    
-    def iter_certs(self) -> Generator[cas_20200407_models.ListUserCertificateOrderResponseBodyCertificateOrderList, None, None]:
+
+    def iter_certs(
+        self,
+    ) -> Generator[
+        cas_20200407_models.ListUserCertificateOrderResponseBodyCertificateOrderList,
+        None,
+        None,
+    ]:
         certs = self._cas_client.list_user_certificate_order(
-            cas_20200407_models.ListUserCertificateOrderRequest(
-                order_type="UPLOAD",
-                show_size=100
-            )
+            cas_20200407_models.ListUserCertificateOrderRequest(order_type="UPLOAD", show_size=100)
         ).body.certificate_order_list
         for c in certs:
             yield c
 
     def get_cert_by_id(self, cert_id: int) -> cas_20200407_models.GetUserCertificateDetailResponseBody:
         return self._cas_client.get_user_certificate_detail(
-            cas_20200407_models.GetUserCertificateDetailRequest(
-                cert_id=cert_id
-            )
+            cas_20200407_models.GetUserCertificateDetailRequest(cert_id=cert_id)
         ).body
 
-    def upload_cert(self, domain_name: str, full_chain: str, private_key: str) -> cas_20200407_models.GetUserCertificateDetailResponseBody:
+    def upload_cert(
+        self, domain_name: str, full_chain: str, private_key: str
+    ) -> cas_20200407_models.GetUserCertificateDetailResponseBody:
         cert_name = domain_name.replace(".", "_") + datetime.now().strftime("_%Y%m%dT%H%M%S")
         cert_id = self._cas_client.upload_user_certificate(
             cas_20200407_models.UploadUserCertificateRequest(
@@ -73,7 +77,10 @@ class Aliyun:
         else:
             raise Exception(f"Failed to upload certificate")
 
-    def set_cert_for_cdn_domain(self, cert_id: int, domain_name: str) -> Tuple[cas_20200407_models.GetUserCertificateDetailResponseBody | None, cdn_20180510_models.DescribeUserDomainsResponseBodyDomainsPageData | None]:
+    def set_cert_for_cdn_domain(self, cert_id: int, domain_name: str) -> Tuple[
+        cas_20200407_models.GetUserCertificateDetailResponseBody | None,
+        cdn_20180510_models.DescribeUserDomainsResponseBodyDomainsPageData | None,
+    ]:
         cert = self.get_cert_by_id(cert_id)
         if not cert:
             raise Exception(f"Failed to get certificate {cert_id}")
@@ -90,13 +97,16 @@ class Aliyun:
                         cert_type="cas",
                         cert_name=str(cert.name),
                         domain_name=domain_name,
-                        sslprotocol="on"
+                        sslprotocol="on",
                     )
                 )
                 return cert, d
         return cert, None
 
-    def set_cert_for_live_domain(self, cert_id: int, domain_name: str) -> Tuple[cas_20200407_models.GetUserCertificateDetailResponseBody | None, live_20161101_models.DescribeLiveUserDomainsResponseBodyDomainsPageData | None]:
+    def set_cert_for_live_domain(self, cert_id: int, domain_name: str) -> Tuple[
+        cas_20200407_models.GetUserCertificateDetailResponseBody | None,
+        live_20161101_models.DescribeLiveUserDomainsResponseBodyDomainsPageData | None,
+    ]:
         cert = self.get_cert_by_id(cert_id)
         if not cert:
             raise Exception(f"Failed to get certificate {cert_id}")
@@ -112,13 +122,18 @@ class Aliyun:
                         cert_name=str(cert.name),
                         cert_type="cas",
                         domain_name=domain_name,
-                        sslprotocol="on"
+                        sslprotocol="on",
                     )
                 )
                 return cert, d
         return cert, None
-    
-    def replace_cert_for_all_matching_cdn_domains(self, new_cert_id: int) -> Tuple[cas_20200407_models.GetUserCertificateDetailResponseBody | None, List[cdn_20180510_models.DescribeUserDomainsResponseBodyDomainsPageData], Set[int], List[Exception]]:
+
+    def replace_cert_for_all_matching_cdn_domains(self, new_cert_id: int) -> Tuple[
+        cas_20200407_models.GetUserCertificateDetailResponseBody | None,
+        List[cdn_20180510_models.DescribeUserDomainsResponseBodyDomainsPageData],
+        Set[int],
+        List[Exception],
+    ]:
         new_cert = self.get_cert_by_id(new_cert_id)
         if not new_cert:
             raise Exception(f"Failed to get certificate {new_cert_id}")
@@ -148,7 +163,7 @@ class Aliyun:
                             cert_type="cas",
                             cert_name=str(new_cert.name),
                             domain_name=str(d.domain_name),
-                            sslprotocol="on"
+                            sslprotocol="on",
                         )
                     )
                     replaced_domains.append(d)
@@ -157,8 +172,13 @@ class Aliyun:
                 log.exception(e)
                 errors.append(e)
         return new_cert, replaced_domains, old_cert_ids, errors
-    
-    def replace_cert_for_all_matching_live_domains(self, new_cert_id: int) -> Tuple[cas_20200407_models.GetUserCertificateDetailResponseBody | None, List[live_20161101_models.DescribeLiveUserDomainsResponseBodyDomainsPageData], Set[int], List[Exception]]:
+
+    def replace_cert_for_all_matching_live_domains(self, new_cert_id: int) -> Tuple[
+        cas_20200407_models.GetUserCertificateDetailResponseBody | None,
+        List[live_20161101_models.DescribeLiveUserDomainsResponseBodyDomainsPageData],
+        Set[int],
+        List[Exception],
+    ]:
         new_cert = self.get_cert_by_id(new_cert_id)
         if not new_cert:
             raise Exception(f"Failed to get certificate {new_cert_id}")
@@ -185,7 +205,7 @@ class Aliyun:
                             cert_name=str(new_cert.name),
                             cert_type="cas",
                             domain_name=str(d.domain_name),
-                            sslprotocol="on"
+                            sslprotocol="on",
                         )
                     )
                     replaced_domains.append(d)
@@ -196,13 +216,18 @@ class Aliyun:
         return new_cert, replaced_domains, old_cert_ids, errors
 
     def delete_cert(self, cert_id: int) -> None:
-        self._cas_client.delete_user_certificate(
-            cas_20200407_models.DeleteUserCertificateRequest(
-                cert_id=cert_id
-            )
-        )
+        self._cas_client.delete_user_certificate(cas_20200407_models.DeleteUserCertificateRequest(cert_id=cert_id))
 
-    def iter_cdn_domains(self) -> Generator[Tuple[cdn_20180510_models.DescribeUserDomainsResponseBodyDomainsPageData, List[cdn_20180510_models.DescribeDomainCertificateInfoResponseBodyCertInfosCertInfo]], None, None]:
+    def iter_cdn_domains(
+        self,
+    ) -> Generator[
+        Tuple[
+            cdn_20180510_models.DescribeUserDomainsResponseBodyDomainsPageData,
+            List[cdn_20180510_models.DescribeDomainCertificateInfoResponseBodyCertInfosCertInfo],
+        ],
+        None,
+        None,
+    ]:
         for d in self._cdn_client.describe_user_domains(
             cdn_20180510_models.DescribeUserDomainsRequest(
                 page_number=1,
@@ -212,13 +237,20 @@ class Aliyun:
             if d.ssl_protocol == "off":
                 continue
             certs = self._cdn_client.describe_domain_certificate_info(
-                cdn_20180510_models.DescribeDomainCertificateInfoRequest(
-                    domain_name=str(d.domain_name)
-                )        
+                cdn_20180510_models.DescribeDomainCertificateInfoRequest(domain_name=str(d.domain_name))
             ).body.cert_infos.cert_info
             yield d, certs
 
-    def iter_live_domains(self) -> Generator[Tuple[live_20161101_models.DescribeLiveUserDomainsResponseBodyDomainsPageData, List[live_20161101_models.DescribeLiveDomainCertificateInfoResponseBodyCertInfosCertInfo]], None, None]:
+    def iter_live_domains(
+        self,
+    ) -> Generator[
+        Tuple[
+            live_20161101_models.DescribeLiveUserDomainsResponseBodyDomainsPageData,
+            List[live_20161101_models.DescribeLiveDomainCertificateInfoResponseBodyCertInfosCertInfo],
+        ],
+        None,
+        None,
+    ]:
         for d in self._live_client.describe_live_user_domains(
             live_20161101_models.DescribeLiveUserDomainsRequest(
                 page_number=1,
@@ -226,8 +258,6 @@ class Aliyun:
             )
         ).body.domains.page_data:
             certs = self._live_client.describe_live_domain_certificate_info(
-                live_20161101_models.DescribeLiveDomainCertificateInfoRequest(
-                    domain_name=str(d.domain_name)
-                )
+                live_20161101_models.DescribeLiveDomainCertificateInfoRequest(domain_name=str(d.domain_name))
             ).body.cert_infos.cert_info
             yield d, certs
