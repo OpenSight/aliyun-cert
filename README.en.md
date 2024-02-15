@@ -35,7 +35,7 @@ aliyun-cert upload-cert --domain example.com /etc/letsencrypt/live/example.com/f
 aliyun-cert set-cert --cert-id 123456 --domain cdn.example.com --service cdn
 
 # check all SSL-enabled CDN domains and their certificates
-aliyun-cert list-cdn-domains --cdn
+aliyun-cert list-domains --cdn
 ```
 
 ### Renew Certificates

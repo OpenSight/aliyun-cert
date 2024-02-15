@@ -52,10 +52,10 @@ aliyun-cert set-cert --cert-id 123456 --domain cdn.example.com --service cdn
 
 ``` shell
 # 显示阿里云证书服务上所有上传上去的证书
-aliyun-cert --list-certs
+aliyun-cert list-certs
 
 # 显示所有开通了 HTTPS 的 CDN 域名及其证书情况
-aliyun-cert --lish-domains --cdn
+aliyun-cert lish-domains --cdn
 ```
 
 ### 证书续期
