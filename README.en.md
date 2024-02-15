@@ -4,10 +4,7 @@ Request and renew free certificates from let's encrypt for Aliyun CDN domains.
 ### Prepare
 Install `certbot` with aliyun DNS plugin and `aliyun-cert`
 ``` shell
-python3 -m venv aliyun-cert
-aliyun-cert/bin/pip install .
-ln -s aliyun-cert/bin/certbot /usr/bin/certbot
-ln -s aliyun-cert/bin/aliyun-cert /usr/bin/aliyun-cert
+pip3 install aliyun-cert
 ```
 
 Create config file `~/.secrets/aliyun.ini` for aliyun access key

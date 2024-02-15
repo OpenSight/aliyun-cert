@@ -4,12 +4,9 @@
 
 ### 安装和配置
 
-本脚本仅在 python 3.9 上进行过验证，使用 virtual environment 安装步骤如下：
+本脚本仅支持 Python 3
 ``` shell
-python3 -m venv aliyun-cert
-aliyun-cert/bin/pip install .
-ln -s aliyun-cert/bin/certbot /usr/bin/certbot
-ln -s aliyun-cert/bin/aliyun-cert /usr/bin/aliyun-cert
+pip install aliyun-cert
 ```
 
 需要配置阿里云 ram 账号的 access key，并至少赋予用户如下权限：
