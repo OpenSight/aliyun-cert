@@ -1,5 +1,10 @@
-### Prepare
-Install `certbot` with aliyun DNS plugin and `aliyun-cert`
+### 功能
+
+通过本脚本可以为阿里云的 `CDN` 以及 `直播服务` 域名申请配置以及自动续期免费的 let's encrypt 证书。
+
+### 安装和配置
+
+本脚本仅在 python 3.9 上进行过验证，使用 virtual environment 安装步骤如下：
 ``` shell
 python3 -m venv aliyun-cert
 aliyun-cert/bin/pip install .
@@ -7,15 +12,25 @@ ln -s aliyun-cert/bin/certbot /usr/bin/certbot
 ln -s aliyun-cert/bin/aliyun-cert /usr/bin/aliyun-cert
 ```
 
-Create config file `~/.secrets/aliyun.ini` for aliyun access key
+需要配置阿里云 ram 账号的 access key，并至少赋予用户如下权限：
+- AliyunDNSFullAccess
+- AliyunCDNFullAccess
+- AliyunYundunCertFullAccess
+
+如需同时配置直播 CDN 的证书，还需赋予如下权限：
+- AliyunLiveFullAccess
+
+access key 记录在一个文件中，比如 `~/.serects/aliyun.ini`，格式如下 
 ``` ini
 dns_aliyun_key_id = xxx
 dns_aliyun_key_secret = yyy
 ```
 
-### Request Certificates from let's encrypt
+### 申请并配置证书
+
+证书支持多域名，以及通配符域名，根据自己情况替换下面的 `example.com` 以及 `*.example.com`
+
 ``` shell
-# request new cert
 certbot certonly \
   --authenticator dns-aliyun \
   --dns-aliyun-propagation-seconds 30 \
@@ -23,28 +38,36 @@ certbot certonly \
   -d example.com -d *.example.com
 ```
 
-### Deploy certificate for aliyun CDN domains
+为阿里云配置证书
+
 ``` shell
-# upload certificate
+# 上传证书到阿里云 cas 服务
 aliyun-cert upload-cert --domain example.com /etc/letsencrypt/live/example.com/fullchain.pem /etc/letsencrypt/live/example.com/privkey.pem
 
-# deploy certificates with certificates id returned from last command
-aliyun-cert set-cert --domain cdn.example.com --cert-id 123456
-
-# check all SSL-enabled CDN domains and their certificates
-aliyun-cert list-cdn-domains
+# 为 CDN 域名配置证书，cert-id 为上一步返回的 id
+aliyun-cert set-cert --cert-id 123456 --domain cdn.example.com --service cdn
 ```
 
-### Renew Certificates
-Create crontab file `/etc/cron.d/certbot`
+查看证书情况
+
+``` shell
+# 显示阿里云证书服务上所有上传上去的证书
+aliyun-cert --list-certs
+
+# 显示所有开通了 HTTPS 的 CDN 域名及其证书情况
+aliyun-cert --lish-domains --cdn
+```
+
+### 证书续期
+
+创建 crontab 文件 `/etc/cron.d/certbot`
 ``` crontab
 0 0,12 * * * root sleep 1471 && certbot renew -q
 ```
 
-Create deploy hook to update aliyun CDN's certification in `/etc/letsencrypt/renewal-hooks/deploy/09-deploy-aliyun.sh`
+创建 certbot 的 deploy hook 脚本，每次 certbot 成功续期续期证书后都会自动调用改脚本上传证书并配置阿里云的服务 `/etc/letsencrypt/renewal-hooks/deploy/09-deploy-aliyun.sh`
 ``` shell
 #!/bin/bash
 
-aliyun-cert certbot-deploy
+aliyun-cert certbot-deploy-hook --cdn --delete-old-cert
 ```
-
