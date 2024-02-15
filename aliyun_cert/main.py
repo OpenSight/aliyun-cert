@@ -37,6 +37,7 @@ class RenewedDomains(click.ParamType):
     def convert(self, value, param, ctx) -> List[str]:
         if value and isinstance(value, str):
             return value.strip().split(" ")
+        return []
 
 
 @click.group()
@@ -88,7 +89,7 @@ def list_domains(aliyun: Aliyun, cdn: bool, live: bool) -> None:
                 g.add_row("status", c.status)
                 g.add_row("life", c.cert_life)
                 if c.cert_expire_time:
-                    days_left = calc_left_days(c.cert_expire_time) if c.cert_expire_time else "N/A"
+                    days_left = calc_left_days(c.cert_expire_time)
                     g.add_row("expired", "[bold red]TRUE[/]" if days_left < 0 else c.cert_expire_time + f" ({days_left} days left)")
                 subpanels.append(
                     Panel(g, title=f"[bold blue]{c.cert_name}[/]", title_align="left")
@@ -106,7 +107,7 @@ def list_domains(aliyun: Aliyun, cdn: bool, live: bool) -> None:
                 g.add_row("status", c.status)
                 g.add_row("life", c.cert_life)
                 if c.cert_expire_time:
-                    days_left = calc_left_days(c.cert_expire_time) if c.cert_expire_time else "N/A"
+                    days_left = calc_left_days(c.cert_expire_time)
                     g.add_row("expired", "[bold red]TRUE[/]" if days_left < 0 else c.cert_expire_time + f" ({days_left} days left)")
                 subpanels.append(
                     Panel(g, title=f"[bold blue]{c.cert_name}[/]", title_align="left")
@@ -133,7 +134,7 @@ def list_certs(aliyun: Aliyun) -> None:
         g.add_row("status", c.status)
         g.add_row("issuer", c.issuer)
         g.add_row("start", c.start_date)
-        g.add_row("expired", "[bold red]TRUE[/]" if c.expired else c.end_date + f" ({days_left} days left)")
+        g.add_row("expired", "[bold red]TRUE[/]" if c.expired else str(c.end_date) + f" ({days_left} days left)")
         cprint(Panel(g, title=f"[bold green]{c.certificate_id}[/]", title_align="left"))
 
 
@@ -156,7 +157,7 @@ def get_cert(aliyun: Aliyun, cert_id: int) -> None:
     g.add_row("SANs", c.sans)
     g.add_row("issuer", c.issuer)
     g.add_row("start", c.start_date)
-    g.add_row("expired", "[bold red]TRUE[/]" if c.expired else c.end_date + f" ({days_left} days left)")
+    g.add_row("expired", "[bold red]TRUE[/]" if c.expired else str(c.end_date) + f" ({days_left} days left)")
     cprint(Panel(g, title=f"[bold green]{c.id}[/]", title_align="left"))
 
 
@@ -250,6 +251,8 @@ def certbot_deploy_hook(aliyun: Aliyun, cert_path, renewed_domains: List[str], c
     with open(os.path.join(cert_path, "privkey.pem"), "r") as f:
         private_key = f.read()
     cert = aliyun.upload_cert(renewed_domains[0], full_chain, private_key)
+    if not isinstance(cert.id, int):
+        raise click.ClickException(f"failed to upload certificate for <{' '.join(d for d in renewed_domains)}>")
     log.info(f"certificate for <{' '.join(d for d in renewed_domains)}> uploaded, id: <{cert.id}>")
     cert_id_to_delete = set()
     has_error = False
