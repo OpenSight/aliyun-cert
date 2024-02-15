@@ -76,10 +76,16 @@ class Authenticator(dns_common.DNSAuthenticator):
 
     def _get_alidns_client(self):
         if not self._alidns_client:
+            if not self.credentials:
+                raise Exception('No credentials')
+            key_id = self.credentials.conf('key-id')
+            key_secret = self.credentials.conf('key-secret')
+            if not key_id or not key_secret:
+                raise Exception('No key-id or key-secret')
             self._alidns_client = Alidns20150109Client(
                 open_api_models.Config(
-                    access_key_id=self.credentials.conf('key-id'),
-                    access_key_secret=self.credentials.conf('key-secret'),
+                    access_key_id=key_id,
+                    access_key_secret=key_secret,
                     # Endpoint 请参考 https://api.aliyun.com/product/Alidns
                     endpoint="alidns.cn-hangzhou.aliyuncs.com"
                 )
@@ -100,7 +106,7 @@ class Authenticator(dns_common.DNSAuthenticator):
         raise errors.PluginError('Unable to determine zone identifier for {0} using zone names: {1}'
                                  .format(domain, domain_name_guesses))
     
-    def _find_domain_record_id(self, domain, rr = '', typ = '', value = ''):
+    def _find_domain_record_id(self, domain, rr = '', typ = '', value = '') -> str:
         for r in self._get_alidns_client().describe_domain_records(
             alidns_20150109_models.DescribeDomainRecordsRequest(
                 domain_name=domain,
@@ -109,7 +115,7 @@ class Authenticator(dns_common.DNSAuthenticator):
                 value_key_word=value
             )
         ).body.domain_records.record:
-            if r.rr == rr:
+            if r.rr == rr and isinstance(r.record_id, str):
                 return r.record_id
         raise errors.PluginError('Unexpected error determining record identifier for {0}: {1}'
                                  .format(rr, 'record not found'))
