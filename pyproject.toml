@@ -1,7 +1,7 @@
 [project]
 name = "aliyun-cert"
 description = ""
-version = "0.1.0"
+version = "0.1.2"
 authors = [{ name = "OpenSight", email = "public@opensight.cn" }]
 readme = "README.md"
 license = { text = "AGPLv3" }
